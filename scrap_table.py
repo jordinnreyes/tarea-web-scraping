@@ -4,8 +4,8 @@ import boto3
 import uuid
 
 def lambda_handler(event, context):
-    # URL de la página web de la Premier League
-    url = "https://www.espn.com/soccer/table/_/league/ENG.1"
+    # URL de la página web de Time and Date con la información del clima
+    url = "https://www.timeanddate.com/weather/"
 
     # Realizar la solicitud HTTP a la página web
     response = requests.get(url)
@@ -18,40 +18,29 @@ def lambda_handler(event, context):
     # Parsear el contenido HTML de la página web
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Encontrar la tabla de posiciones de la Premier League
-    table = soup.find('table', {'class': 'Table'})
-    if not table:
+    # Encontrar la sección de clima actual
+    weather_section = soup.find('div', {'class': 'h2'})
+    if not weather_section:
         return {
             'statusCode': 404,
-            'body': 'No se encontró la tabla de posiciones en la página web'
+            'body': 'No se encontró la información del clima en la página web'
         }
 
-    # Extraer las filas de la tabla (cada equipo)
-    rows = []
-    for row in table.find_all('tr')[1:]:  # Omitir el encabezado
-        cells = row.find_all('td')
-        if len(cells) >= 7:  # Asegurarse de que hay suficiente información
-            position = cells[0].text.strip()
-            team = cells[1].text.strip()
-            played = cells[2].text.strip()
-            won = cells[3].text.strip()
-            drawn = cells[4].text.strip()
-            lost = cells[5].text.strip()
-            points = cells[6].text.strip()
+    # Extraer el nombre de la ciudad, la temperatura y el estado del clima
+    city_name = weather_section.find_previous('h1').text.strip()
+    temperature = weather_section.text.strip()
+    weather_description = soup.find('p', {'class': 'h2'}).text.strip()  # Descripción del clima
 
-            rows.append({
-                'position': position,
-                'team': team,
-                'played': played,
-                'won': won,
-                'drawn': drawn,
-                'lost': lost,
-                'points': points,
-            })
+    # Organizar los datos en un diccionario
+    weather_data = {
+        'city': city_name,
+        'temperature': temperature,
+        'weather_description': weather_description,
+    }
 
     # Guardar los datos en DynamoDB
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('TablaIMDBTopMovies')
+    table = dynamodb.Table('WeatherData')
 
     # Eliminar todos los elementos de la tabla antes de agregar los nuevos
     scan = table.scan()
@@ -64,12 +53,11 @@ def lambda_handler(event, context):
             )
 
     # Insertar los nuevos datos
-    for row in rows:
-        row['id'] = str(uuid.uuid4())  # Generar un ID único para cada entrada
-        table.put_item(Item=row)
+    weather_data['id'] = str(uuid.uuid4())  # Generar un ID único para cada entrada
+    table.put_item(Item=weather_data)
 
     # Retornar el resultado como JSON
     return {
         'statusCode': 200,
-        'body': rows
+        'body': weather_data
     }
