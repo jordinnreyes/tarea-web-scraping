@@ -25,10 +25,10 @@ functions:
 
 resources:
   Resources:
-    TablaIMDBTopMovies: 
+    CovidStats: 
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: TablaIMDBTopMovies 
+        TableName: CovidStats 
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
