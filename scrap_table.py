@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import boto3
 import uuid
-import json  # Importar json para imprimir datos de manera legible
+import json  # Para mostrar los datos de manera legible
 
 def lambda_handler(event, context):
     # URL de la página web que contiene los sismos reportados
@@ -41,7 +41,7 @@ def lambda_handler(event, context):
     print(json.dumps(rows, indent=4))  # Muestra las filas extraídas en formato legible
     print(f"Se encontraron {len(rows)} filas de datos")  # Muestra el número de filas encontradas
 
-    # Guardar los datos en DynamoDB
+    # Conectar a DynamoDB
     dynamodb = boto3.resource('dynamodb')
     dynamo_table = dynamodb.Table('TablaWebScrapping2')
 
@@ -63,5 +63,5 @@ def lambda_handler(event, context):
     # Retornar el resultado como JSON
     return {
         'statusCode': 200,
-        'body': rows
+        'body': json.dumps(rows)
     }
