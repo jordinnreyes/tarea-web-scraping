@@ -4,8 +4,8 @@ import boto3
 import uuid
 
 def lambda_handler(event, context):
-    # URL de la página web de IMDb con las películas más populares
-    url = "https://www.imdb.com/chart/top/"
+    # URL de la página web de FIFA World Ranking
+    url = "https://inside.fifa.com/fifa-world-ranking"
 
     # Realizar la solicitud HTTP a la página web
     response = requests.get(url)
@@ -18,29 +18,29 @@ def lambda_handler(event, context):
     # Parsear el contenido HTML de la página web
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Encontrar la tabla de películas
-    table = soup.find('table', {'class': 'chart'})
+    # Encontrar la tabla de clasificaciones
+    table = soup.find('table', {'class': 'ranking_table'})  # Aquí debes asegurarte de que la clase sea correcta
     if not table:
         return {
             'statusCode': 404,
-            'body': 'No se encontró la tabla de películas en la página web'
+            'body': 'No se encontró la tabla de clasificación en la página web'
         }
 
-    # Extraer las filas de la tabla (cada película)
+    # Extraer las filas de la tabla (cada selección)
     rows = []
     for row in table.find_all('tr')[1:]:  # Omitir el encabezado
         cells = row.find_all('td')
-        if len(cells) >= 3:  # Asegurarse de que hay suficiente información
-            rank = cells[0].text.strip()
-            title = cells[1].find('a').text.strip()
-            year = cells[1].find('span', {'class': 'secondaryInfo'}).text.strip()
-            rating = cells[2].text.strip()
+        if len(cells) >= 4:  # Asegurarse de que hay suficiente información (por ejemplo, posición, equipo, puntos, etc.)
+            rank = cells[0].text.strip()  # La posición del equipo
+            country = cells[1].text.strip()  # El nombre del país
+            points = cells[2].text.strip()  # Los puntos
+            movement = cells[3].text.strip()  # El movimiento (ascenso o descenso)
 
             rows.append({
                 'rank': rank,
-                'title': title,
-                'year': year,
-                'rating': rating,
+                'country': country,
+                'points': points,
+                'movement': movement
             })
 
     # Guardar los datos en DynamoDB
