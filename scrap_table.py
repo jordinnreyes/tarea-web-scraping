@@ -18,25 +18,30 @@ def lambda_handler(event, context):
     # Parsear el contenido HTML de la página web
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Encontrar la sección de clima actual
-    weather_section = soup.find('div', {'class': 'h2'})
-    if not weather_section:
+    # Encontrar la tabla de ciudades y clima
+    table = soup.find('tbody')  # La tabla está dentro de un <tbody>
+    if not table:
         return {
             'statusCode': 404,
-            'body': 'No se encontró la información del clima en la página web'
+            'body': 'No se encontró la tabla de clima en la página web'
         }
 
-    # Extraer el nombre de la ciudad, la temperatura y el estado del clima
-    city_name = weather_section.find_previous('h1').text.strip()
-    temperature = weather_section.text.strip()
-    weather_description = soup.find('p', {'class': 'h2'}).text.strip()  # Descripción del clima
+    # Extraer las filas de la tabla
+    rows = []
+    for row in table.find_all('tr'):
+        cells = row.find_all('td')
+        if len(cells) >= 4:  # Asegurarse de que hay suficiente información
+            city = cells[0].find('a').text.strip()  # Nombre de la ciudad
+            time = cells[1].text.strip()  # Hora de la última actualización
+            weather_icon = cells[2].find('img')['title']  # Descripción del clima
+            temperature = cells[3].text.strip()  # Temperatura
 
-    # Organizar los datos en un diccionario
-    weather_data = {
-        'city': city_name,
-        'temperature': temperature,
-        'weather_description': weather_description,
-    }
+            rows.append({
+                'city': city,
+                'time': time,
+                'weather_icon': weather_icon,
+                'temperature': temperature,
+            })
 
     # Guardar los datos en DynamoDB
     dynamodb = boto3.resource('dynamodb')
@@ -53,11 +58,12 @@ def lambda_handler(event, context):
             )
 
     # Insertar los nuevos datos
-    weather_data['id'] = str(uuid.uuid4())  # Generar un ID único para cada entrada
-    table.put_item(Item=weather_data)
+    for row in rows:
+        row['id'] = str(uuid.uuid4())  # Generar un ID único para cada entrada
+        table.put_item(Item=row)
 
     # Retornar el resultado como JSON
     return {
         'statusCode': 200,
-        'body': weather_data
+        'body': rows
     }
