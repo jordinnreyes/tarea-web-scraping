@@ -6,7 +6,7 @@ provider:
   runtime: python3.12
   # Default memory size for functions (default: 1024MB)
   memorySize: 1024
-  timeout: 30
+  timeout: 60
   iam:
     role: arn:aws:iam::078729045663:role/LabRole
 
@@ -25,10 +25,10 @@ functions:
 
 resources:
   Resources:
-    TablaWebScrapping:
+    TablaIMDBTopMovies: 
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: TablaWebScrapping2
+        TableName: TablaIMDBTopMovies 
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
